@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Study Tracker</title>
+<meta name="theme-color" content="#0B0E2A">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Study Tracker">
+<style>
+  :root{
+    --bg-top:#0B0E2A;
+    --bg-mid:#171233;
+    --bg-bot:#231A38;
+    --card:rgba(255,255,255,0.05);
+    --card-border:rgba(255,255,255,0.10);
+    --ink:#F1EEFB;
+    --muted:#9C97B8;
+    --line:rgba(255,255,255,0.10);
+    --accent:#8E7CF0;
+    --accent2:#5B7FE8;
+    --accent-soft:rgba(142,124,240,0.16);
+    --good:#6FE7C5;
+    --warn:#F2B872;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background:linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 55%, var(--bg-bot) 100%);
+    color:var(--ink);
+    min-height:100vh;
+    padding:calc(20px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(60px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+    position:relative;
+    overflow-x:hidden;
+  }
+  h1, h2{
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    letter-spacing:0.2px;
+  }
+  /* ---- dreamy night backdrop ---- */
+  .sky{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .stars{
+    position:absolute;
+    inset:0;
+    opacity:0.55;
+    background-image:
+      radial-gradient(1.4px 1.4px at 10% 20%, #fff, transparent),
+      radial-gradient(1px 1px at 40% 65%, #fff, transparent),
+      radial-gradient(1.2px 1.2px at 70% 35%, #fff, transparent),
+      radial-gradient(1px 1px at 85% 80%, #fff, transparent),
+      radial-gradient(1.3px 1.3px at 55% 12%, #fff, transparent),
+      radial-gradient(1px 1px at 25% 90%, #fff, transparent),
+      radial-gradient(1.1px 1.1px at 92% 50%, #fff, transparent);
+    background-size:240px 240px;
+    background-repeat:repeat;
+  }
+  .moon{
+    position:absolute;
+    top:36px; right:26px;
+    width:64px; height:64px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #FFFDF6, #E9E4F7 60%, #C9C2E8 100%);
+    box-shadow:0 0 50px 14px rgba(233,228,247,0.28), 0 0 90px 30px rgba(142,124,240,0.12);
+  }
+  .cloud{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(28px);
+    opacity:0.16;
+    background:#B7ACEB;
+  }
+  .cloud.c1{ width:220px; height:90px; top:130px; left:-40px; }
+  .cloud.c2{ width:260px; height:100px; bottom:80px; right:-60px; background:#6F9CE8; }
+  .cloud.c3{ width:180px; height:80px; bottom:260px; left:20px; opacity:0.10; }
+
+  #app{
+    max-width:480px;
+    margin:0 auto;
+    position:relative;
+    z-index:1;
+  }
+  .header{ margin-bottom:18px; }
+  .header h1{
+    font-size:23px;
+    margin:0 0 4px;
+    background:linear-gradient(90deg, #F1EEFB, #C9C2E8);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .header .sub{
+    color:var(--muted);
+    font-size:13.5px;
+    letter-spacing:0.2px;
+  }
+  .banner{
+    background:var(--accent-soft);
+    color:#D7CFFF;
+    border:1px solid rgba(142,124,240,0.35);
+    border-radius:12px;
+    padding:10px 14px;
+    font-size:13.5px;
+    font-weight:600;
+    margin-bottom:16px;
+  }
+  .card{
+    background:var(--card);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border-radius:var(--radius);
+    padding:18px;
+    margin-bottom:16px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.35);
+    border:1px solid var(--card-border);
+  }
+  .card h2{
+    font-size:16.5px;
+    margin:0 0 12px;
+    font-weight:600;
+    color:#F1EEFB;
+  }
+  .goal-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .goal-row label{
+    font-size:14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex:1;
+    color:var(--ink);
+  }
+  .goal-row input{
+    width:80px;
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,0.06);
+    color:var(--ink);
+    font-size:14px;
+    text-align:right;
+  }
+  .btn{
+    background:linear-gradient(135deg, var(--accent2), var(--accent));
+    color:#fff;
+    border:none;
+    padding:11px 20px;
+    border-radius:999px;
+    font-size:14.5px;
+    font-weight:700;
+    cursor:pointer;
+    width:100%;
+    touch-action:manipulation;
+    box-shadow:0 4px 18px rgba(142,124,240,0.35);
+  }
+  .btn:active{ opacity:0.85; }
+  .btn.secondary{
+    background:transparent;
+    color:#D7CFFF;
+    border:1.5px solid var(--accent);
+    box-shadow:none;
+  }
+  .link-btn{
+    background:none;
+    border:none;
+    color:#C9BEFF;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    padding:10px 6px;
+    margin:-10px -6px;
+    -webkit-tap-highlight-color: rgba(142,124,240,0.15);
+    touch-action:manipulation;
+  }
+  .top-actions{
+    display:flex;
+    justify-content:flex-end;
+    margin-bottom:6px;
+  }
+  .subject-progress{
+    margin-bottom:14px;
+  }
+  .subject-progress:last-child{margin-bottom:0;}
+  .sp-top{
+    display:flex;
+    justify-content:space-between;
+    font-size:14px;
+    margin-bottom:6px;
+  }
+  .sp-top .name{
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color:var(--ink);
+  }
+  .sp-top .nums{
+    color:var(--muted);
+    font-size:12.5px;
+  }
+  .bar-track{
+    height:9px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.08);
+    overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;
+    border-radius:999px;
+    box-shadow:0 0 10px rgba(142,124,240,0.5);
+  }
+  .logform{
+    display:flex;
+    gap:8px;
+    margin-bottom:12px;
+  }
+  select, .num-input{
+    padding:10px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,0.06);
+    color:var(--ink);
+    font-size:14px;
+  }
+  select option{ background:#1B1533; color:var(--ink); }
+  select{ flex:1.3; }
+  .num-input{ flex:1; width:70px; text-align:right; }
+  .entry-list{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .entry{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:rgba(255,255,255,0.04);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:8px 12px;
+    font-size:13.5px;
+    color:var(--ink);
+  }
+  .entry .x{
+    background:none;
+    border:none;
+    color:var(--muted);
+    font-size:15px;
+    cursor:pointer;
+    padding:0 4px;
+  }
+  .empty-note{
+    color:var(--muted);
+    font-size:13px;
+    text-align:center;
+    padding:6px 0;
+  }
+  .todo-box{
+    background:rgba(242,184,114,0.07);
+    border:1px solid rgba(242,184,114,0.30);
+  }
+  .todo-box h2{ color:var(--warn); }
+  .todo-item{
+    display:flex;
+    justify-content:space-between;
+    padding:7px 0;
+    font-size:14px;
+    color:var(--ink);
+    border-bottom:1px dashed rgba(242,184,114,0.25);
+  }
+  .todo-item:last-child{ border-bottom:none; }
+  .all-done{
+    text-align:center;
+    color:var(--good);
+    font-weight:700;
+    padding:8px 0;
+    text-shadow:0 0 16px rgba(111,231,197,0.45);
+  }
+  /* ---- install button + toast (app version) ---- */
+  .install-btn{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:calc(14px + env(safe-area-inset-bottom, 0px)); z-index:40;
+    background:linear-gradient(135deg, var(--accent), var(--accent2)); color:#fff;
+    border:none; padding:11px 20px; border-radius:999px;
+    font:inherit; font-size:15px; font-weight:700;
+    box-shadow:0 8px 24px rgba(0,0,0,0.35); cursor:pointer; touch-action:manipulation;
+  }
+  #toast{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:calc(70px + env(safe-area-inset-bottom, 0px)); z-index:41;
+    max-width:90%; background:#1E1840; color:var(--ink);
+    border:1px solid var(--card-border); padding:12px 18px; border-radius:16px;
+    font-size:15px; text-align:center; box-shadow:0 8px 24px rgba(0,0,0,0.4);
+    opacity:0; pointer-events:none; transition:opacity 0.25s;
+  }
+  #toast.show{ opacity:1; }
+</style>
+</head>
+<body>
+<div class="sky">
+  <div class="stars"></div>
+  <div class="moon"></div>
+  <div class="cloud c1"></div>
+  <div class="cloud c2"></div>
+  <div class="cloud c3"></div>
+</div>
+<div id="app">Loading…</div>
+
+<script>
+(function(){
+  const SUBJECTS = [
+    {key:'English',   emoji:'📘', color:'#7C9BFF'},
+    {key:'Math',       emoji:'➗', color:'#6FE7C5'},
+    {key:'Thai',       emoji:'🇹🇭', color:'#F2B872'},
+    {key:'Chinese',    emoji:'🀄', color:'#E28CC0'},
+    {key:'Computing',  emoji:'💻', color:'#B79CFF'},
+  ];
+
+  function pad(n){ return n<10 ? '0'+n : ''+n; }
+  function isoDate(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function getMonday(d){
+    const date = new Date(d);
+    const day = date.getDay();
+    const diff = (day===0 ? -6 : 1-day);
+    date.setDate(date.getDate()+diff);
+    date.setHours(0,0,0,0);
+    return date;
+  }
+  function addDays(d,n){ const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+  function friendlyDate(d){
+    return d.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+  }
+  function weekdayName(d){
+    return d.toLocaleDateString(undefined, {weekday:'long'});
+  }
+
+  const today = new Date();
+  const todayISO = isoDate(today);
+
+  let goals = null;
+  let logs = [];
+  let editingGoals = false;
+  let cycleStartISO, cycleEndISO, cycleStartDate, cycleEndDate;
+
+  // Works inside Claude's artifact viewer (window.storage) and, if this
+  // file is opened on its own in a regular browser, falls back to that
+  // browser's local storage. To guard against either layer failing to
+  // persist between separate opens, every save writes to BOTH layers,
+  // and a read that finds data in only one backfills the other.
+  const hasClaudeStorage = (typeof window.storage !== 'undefined'
+    && typeof window.storage.get === 'function'
+    && typeof window.storage.set === 'function');
+
+  function localGet(key){
+    try{ return localStorage.getItem('study-tracker:'+key); }
+    catch(e){ return null; }
+  }
+  function localSet(key, value){
+    try{ localStorage.setItem('study-tracker:'+key, value); }
+    catch(e){ console.error('localStorage set failed', e); }
+  }
+
+  async function storageGet(key){
+    let claudeVal = null;
+    if(hasClaudeStorage){
+      try{
+        const r = await window.storage.get(key, false);
+        claudeVal = r ? r.value : null;
+      }catch(e){ claudeVal = null; }
+    }
+    if(claudeVal !== null) return claudeVal;
+
+    const localVal = localGet(key);
+    if(localVal !== null && hasClaudeStorage){
+      // heal: Claude storage didn't have it but the browser did — push it back up
+      try{ await window.storage.set(key, localVal, false); }catch(e){}
+    }
+    return localVal;
+  }
+
+  async function storageSet(key, value){
+    localSet(key, value);
+    if(hasClaudeStorage){
+      try{ await window.storage.set(key, value, false); }
+      catch(e){ console.error('Claude storage set failed', e); }
+    }
+  }
+
+  async function loadCycleMeta(){
+    let meta = null;
+    const raw = await storageGet('cycle-meta');
+    if(raw){ try{ meta = JSON.parse(raw); }catch(e){ meta = null; } }
+
+    if(!meta){
+      // very first time opening the app: this cycle starts today and
+      // runs through the Sunday of this calendar week (a short first
+      // week if today isn't a Monday). Every cycle after this one
+      // will be a full Monday–Sunday week.
+      const end = addDays(getMonday(today), 6);
+      meta = { start: todayISO, end: isoDate(end) };
+      await storageSet('cycle-meta', JSON.stringify(meta));
+    } else if(todayISO > meta.end){
+      // we've rolled past the old cycle's end — start a fresh
+      // Monday-based week
+      const newStart = getMonday(today);
+      const newEnd = addDays(newStart, 6);
+      meta = { start: isoDate(newStart), end: isoDate(newEnd) };
+      await storageSet('cycle-meta', JSON.stringify(meta));
+    }
+
+    cycleStartISO = meta.start;
+    cycleEndISO = meta.end;
+    cycleStartDate = new Date(cycleStartISO+'T00:00:00');
+    cycleEndDate = new Date(cycleEndISO+'T00:00:00');
+  }
+
+  async function loadWeek(){
+    try{
+      await loadCycleMeta();
+      const g = await storageGet('goals-'+cycleStartISO);
+      goals = g ? JSON.parse(g) : null;
+      const l = await storageGet('logs-'+cycleStartISO);
+      logs = l ? JSON.parse(l) : [];
+      render();
+    }catch(e){
+      console.error('Failed to load tracker data', e);
+      document.getElementById('app').innerHTML =
+        '<div class="card"><h2>Something went wrong loading your data</h2>' +
+        '<p style="color:var(--muted); font-size:13px;">' + (e && e.message ? e.message : e) + '</p></div>';
+    }
+  }
+
+  async function saveGoals(newGoals){
+    goals = newGoals;
+    editingGoals = false;
+    await storageSet('goals-'+cycleStartISO, JSON.stringify(goals));
+    render();
+  }
+
+  async function persistLogs(){
+    await storageSet('logs-'+cycleStartISO, JSON.stringify(logs));
+  }
+
+  function addLog(subject, minutes){
+    logs.push({ id: Date.now()+'-'+Math.random().toString(36).slice(2), date: todayISO, subject, minutes });
+    persistLogs();
+    render();
+  }
+
+  function removeLog(id){
+    logs = logs.filter(l => l.id !== id);
+    persistLogs();
+    render();
+  }
+
+  function doneFor(subject){
+    return logs.filter(l => l.subject === subject).reduce((s,l)=>s+l.minutes, 0);
+  }
+
+  function formatMinutes(total){
+    const h = Math.floor(total / 60);
+    const m = total % 60;
+    if(h === 0) return m + 'm';
+    if(m === 0) return h + 'h';
+    return h + 'h ' + m + 'm';
+  }
+
+  async function resetEverything(){
+    const ok = window.confirm ? window.confirm('This clears all goals and logged time and starts totally fresh. Continue?') : true;
+    if(!ok) return;
+
+    try{
+      Object.keys(localStorage).forEach(k => {
+        if(k.indexOf('study-tracker:') === 0) localStorage.removeItem(k);
+      });
+    }catch(e){ console.error('local clear failed', e); }
+
+    if(hasClaudeStorage){
+      try{
+        const listed = await window.storage.list(undefined, false);
+        if(listed && listed.keys){
+          for(const k of listed.keys){
+            try{ await window.storage.delete(k, false); }catch(e){}
+          }
+        }
+      }catch(e){ console.error('claude storage clear failed', e); }
+    }
+
+    location.reload();
+  }
+
+  function el(html){
+    const t = document.createElement('template');
+    t.innerHTML = html.trim();
+    return t.content.firstChild;
+  }
+
+  function render(){
+    const app = document.getElementById('app');
+    app.innerHTML = '';
+
+    const header = el(`
+      <div class="header">
+        <h1>📚 Weekly Study Tracker</h1>
+        <div class="sub">Week of ${friendlyDate(cycleStartDate)} – ${friendlyDate(cycleEndDate)} &middot; Today is ${weekdayName(today)}</div>
+      </div>
+    `);
+    app.appendChild(header);
+
+    if(todayISO === cycleStartISO && !goals && !editingGoals){
+      app.appendChild(el(`<div class="banner">🗓️ New week starts today — set your study goals below.</div>`));
+    }
+
+    if(!goals || editingGoals){
+      app.appendChild(renderGoalForm());
+    } else {
+      app.appendChild(renderDashboard());
+    }
+
+    const resetBtn = el(`<button type="button" style="display:block; margin:22px auto 0; background:none; border:none; color:var(--muted); font-size:12.5px; text-decoration:underline; cursor:pointer;">Reset everything and start over</button>`);
+    resetBtn.addEventListener('click', resetEverything);
+    app.appendChild(resetBtn);
+  }
+
+  function renderGoalForm(){
+    const wrap = el(`
+      <div class="card">
+        <h2>How many minutes will you do this week?</h2>
+      </div>
+    `);
+    SUBJECTS.forEach(s => {
+      const existing = goals ? goals[s.key] : '';
+      const row = el(`
+        <div class="goal-row">
+          <label>${s.emoji} ${s.key}</label>
+          <input type="number" min="0" step="5" placeholder="min" data-subject="${s.key}" value="${existing || ''}">
+        </div>
+      `);
+      wrap.appendChild(row);
+    });
+    const saveBtn = el(`<button type="button" class="btn">Save This Week's Goals</button>`);
+    saveBtn.addEventListener('click', () => {
+      const newGoals = {};
+      wrap.querySelectorAll('input[data-subject]').forEach(inp => {
+        newGoals[inp.dataset.subject] = Math.max(0, parseInt(inp.value, 10) || 0);
+      });
+      saveGoals(newGoals);
+    });
+    wrap.appendChild(saveBtn);
+
+    if(goals && editingGoals){
+      const cancel = el(`<button type="button" class="btn secondary" style="margin-top:8px;">Cancel</button>`);
+      cancel.addEventListener('click', () => { editingGoals = false; render(); });
+      wrap.appendChild(cancel);
+    }
+    return wrap;
+  }
+
+  function renderDashboard(){
+    const frag = document.createDocumentFragment();
+
+    // ---- progress card ----
+    const progressCard = el(`<div class="card"></div>`);
+    progressCard.appendChild(el(`<h2>This Week's Progress</h2>`));
+
+    const totalDone = SUBJECTS.reduce((sum, s) => sum + doneFor(s.key), 0);
+    const totalGoal = SUBJECTS.reduce((sum, s) => sum + (goals[s.key] || 0), 0);
+    progressCard.appendChild(el(`
+      <div style="display:flex; justify-content:space-between; align-items:baseline; background:rgba(142,124,240,0.10); border:1px solid rgba(142,124,240,0.25); border-radius:12px; padding:10px 14px; margin-bottom:16px;">
+        <span style="font-size:13.5px; color:var(--muted); font-weight:600;">⏱️ Total time this week</span>
+        <span style="font-size:18px; font-weight:800; color:var(--ink);">${formatMinutes(totalDone)}${totalGoal > 0 ? ' <span style="font-size:12.5px; color:var(--muted); font-weight:600;">/ ' + formatMinutes(totalGoal) + '</span>' : ''}</span>
+      </div>
+    `));
+
+    SUBJECTS.forEach(s => {
+      const goal = goals[s.key] || 0;
+      const done = doneFor(s.key);
+      const remaining = Math.max(goal - done, 0);
+      const pct = goal > 0 ? Math.min(100, Math.round((done/goal)*100)) : (done>0 ? 100 : 0);
+      const row = el(`
+        <div class="subject-progress">
+          <div class="sp-top">
+            <span class="name">${s.emoji} ${s.key}</span>
+            <span class="nums">${done} / ${goal} min &middot; ${remaining} left</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${pct}%; background:${s.color};"></div>
+          </div>
+        </div>
+      `);
+      progressCard.appendChild(row);
+    });
+
+    const editBtn = el(`<button type="button" class="btn secondary" style="margin-top:14px;">✏️ Edit This Week's Goals</button>`);
+    editBtn.addEventListener('click', () => { editingGoals = true; render(); });
+    progressCard.appendChild(editBtn);
+
+    frag.appendChild(progressCard);
+
+    // ---- daily check-in card ----
+    const logCard = el(`<div class="card"><h2>What did you do today?</h2></div>`);
+    const form = el(`<div class="logform"></div>`);
+    const select = el(`<select></select>`);
+    SUBJECTS.forEach(s => {
+      const opt = el(`<option value="${s.key}">${s.emoji} ${s.key}</option>`);
+      select.appendChild(opt);
+    });
+    const minInput = el(`<input type="number" class="num-input" placeholder="min" min="1" step="5">`);
+    const addBtn = el(`<button type="button" class="btn" style="width:auto; padding:10px 16px;">Log</button>`);
+    addBtn.addEventListener('click', () => {
+      const minutes = parseInt(minInput.value, 10);
+      if(!minutes || minutes <= 0) return;
+      addLog(select.value, minutes);
+    });
+    form.appendChild(select);
+    form.appendChild(minInput);
+    form.appendChild(addBtn);
+    logCard.appendChild(form);
+
+    const todaysLogs = logs.filter(l => l.date === todayISO);
+    const listWrap = el(`<div class="entry-list"></div>`);
+    if(todaysLogs.length === 0){
+      listWrap.appendChild(el(`<div class="empty-note">Nothing logged yet today.</div>`));
+    } else {
+      todaysLogs.forEach(l => {
+        const subj = SUBJECTS.find(s => s.key === l.subject);
+        const row = el(`
+          <div class="entry">
+            <span>${subj ? subj.emoji : ''} ${l.subject} — ${l.minutes} min</span>
+            <button type="button" class="x" title="remove">✕</button>
+          </div>
+        `);
+        row.querySelector('.x').addEventListener('click', () => removeLog(l.id));
+        listWrap.appendChild(row);
+      });
+    }
+    logCard.appendChild(listWrap);
+    frag.appendChild(logCard);
+
+    // ---- still-to-do card ----
+    const todoCard = el(`<div class="card todo-box"><h2>⏳ Still To Finish This Week</h2></div>`);
+    const remainingList = SUBJECTS
+      .map(s => ({ s, remaining: Math.max((goals[s.key]||0) - doneFor(s.key), 0) }))
+      .filter(x => x.remaining > 0)
+      .sort((a,b) => b.remaining - a.remaining);
+
+    if(remainingList.length === 0){
+      todoCard.appendChild(el(`<div class="all-done">🎉 All caught up for the week!</div>`));
+    } else {
+      remainingList.forEach(({s, remaining}) => {
+        todoCard.appendChild(el(`
+          <div class="todo-item">
+            <span>${s.emoji} ${s.key}</span>
+            <span>${remaining} min left</span>
+          </div>
+        `));
+      });
+    }
+    frag.appendChild(todoCard);
+
+    return frag;
+  }
+
+  loadWeek();
+})();
+</script>
+<button type="button" id="installBtn" class="install-btn" style="display:none">📲 Install App</button>
+<div id="toast"></div>
+<script>
+// ---- install to home screen + offline support (app version) ----
+(function(){
+  const installBtn = document.getElementById('installBtn');
+  const toastEl = document.getElementById('toast');
+  let t = 0;
+  function toast(msg, ms){ toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(t); t = setTimeout(function(){ toastEl.classList.remove('show'); }, ms || 4000); }
+  const isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  // iPadOS Safari reports itself as a Mac, so also check for a touch screen
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  let deferred = null;
+  if(!isStandalone){
+    if(isIOS){
+      installBtn.style.display = '';
+      installBtn.addEventListener('click', function(){ toast('📲 In Safari tap Share, then “Add to Home Screen”', 5000); });
+    } else {
+      window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferred = e; installBtn.style.display = ''; });
+      installBtn.addEventListener('click', function(){
+        if(!deferred) return;
+        deferred.prompt();
+        deferred.userChoice.then(function(){ deferred = null; installBtn.style.display = 'none'; });
+      });
+      window.addEventListener('appinstalled', function(){ installBtn.style.display = 'none'; });
+    }
+  }
+  // ask the browser to keep your saved study data even when the device is low on space
+  if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(function(){}); }
+  if('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+  }
+})();
+</script>
+</body>
+</html>
